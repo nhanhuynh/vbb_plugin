@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<plugins>
+	<plugin active="1">
+		<title>metacaptcha_init_quick</title>
+		<hookname>showthread_complete</hookname>
+		<phpcode><![CDATA[
+
+//include jQuery and form submission handler
+echo  '
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script>
+
+    function Validate(that)
+    {
+        var minchar='.$vbulletin->options['postminchars'].';
+        if (typeof amf_glb === "undefined"){
+              params_array = [that,minchar];
+              metaCAPTCHA.execute( vB_Editor[QR_EditorID].getRawData(),qr_prepare_submit,params_array,that);
+              return false;
+        }
+        else if (amf_glb === true)
+            return qr_prepare_submit(that, minchar)
+    }
+</script>
+';
+//set up metacaptcha
+include_once "includes/metacaptcha/metacaptcha_lib.php"; //Link to metacaptcha_lib.php
+$formID="quick_reply";
+$lib_path = "includes/metacaptcha/metacaptcha.php";
+echo initialize_metacaptcha($lib_path, $formID);
+
+//replace vbb form submission handler
+$pattern = '/(?<=onsubmit=")[^;]*/';
+$replacement = 'return Validate(this)';
+$vbulletin->templatecache['SHOWTHREAD'] = preg_replace($pattern, $replacement, $vbulletin->templatecache['SHOWTHREAD']);
+
+//add onclick handler for preview button so that metacaptcha won't be executed when user click review
+$target = ' id="qr_preview" onclick="clickedelm = this.value"';
+$replacement=' id="qr_preview" onclick="clickedelm = this.value;amf_glb=true"';
+$vbulletin->templatecache['SHOWTHREAD']= str_replace($target, $replacement, $vbulletin->templatecache['SHOWTHREAD']);
+
+]]>
+</phpcode>
+	</plugin>
+
+	<plugin active="1">
+		<title> metacaptcha_init_advanced</title>
+		<hookname>newreply_form_complete</hookname>
+		<phpcode><![CDATA[
+
+echo '
+    <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="//ox.cs.pdx.edu/services/application/js/metacaptcha_vbb.js"></script>
+<script>
+   $(document).ready(function() {initialize_metacaptcha("includes/metacaptcha/metacaptcha.php","comment_form");
+$("#kapow-status").detach().insertAfter($("input[type=\'submit\'][value=\'Preview Post\']"))
+});
+</script>
+<script>
+function Validate(that)
+    {
+        // if vbulletion validation return true
+        if ( vB_Editor["'.$editorid.'"].prepare_submit(0, '.$vbulletin->options['postminchars'].'))
+        {
+            //if the submit button is is click
+            if (typeof amf_glb === "undefined"){
+                metaCAPTCHA.execute(vB_Editor["'.$editorid.'"].getRawData());
+                return false;
+            }
+            // if preview button is clicked
+            else
+                return true;
+        }
+        // if vbulletin validation return false
+        else
+            return false;
+
+   }
+</script>
+    ';
+
+
+$target = 'type="submit" class="button" name="preview"';
+$replacement='type="submit" class="button" name="preview" onclick="amf_glb=true"';
+
+$vbulletin->templatecache['newreply']= str_replace($target, $replacement, $vbulletin->templatecache['newreply']);
+
+]]></phpcode>
+	</plugin>
+</plugins>
