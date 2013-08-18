@@ -4,12 +4,15 @@
 		<title>metacaptcha_init_quick</title>
 		<hookname>showthread_complete</hookname>
 		<phpcode><![CDATA[
-
 //include jQuery and form submission handler
-echo  '
+$target = '</body>';
+$replacement= '
 <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="//api.metacaptcha.com/application/js/metacaptcha_vbb.js"></script>
 <script>
-
+     $(document).ready(function (){
+        initialize_metacaptcha("//www.berich.com.vn/includes/metacaptcha/metacaptcha.php","quick_reply")
+     });   
     function Validate(that)
     {
         var minchar='.$vbulletin->options['postminchars'].';
@@ -22,12 +25,10 @@ echo  '
             return qr_prepare_submit(that, minchar)
     }
 </script>
+</body>
 ';
-//set up metacaptcha
-include_once "includes/metacaptcha/metacaptcha_lib.php"; //Link to metacaptcha_lib.php
-$formID="quick_reply";
-$lib_path = "includes/metacaptcha/metacaptcha.php";
-echo initialize_metacaptcha($lib_path, $formID);
+$vbulletin->templatecache['SHOWTHREAD']= str_replace($target, $replacement, $vbulletin->templatecache['SHOWTHREAD']);
+
 
 //replace vbb form submission handler
 $pattern = '/(?<=onsubmit=")[^;]*/';
@@ -47,24 +48,23 @@ $vbulletin->templatecache['SHOWTHREAD']= str_replace($target, $replacement, $vbu
 		<title> metacaptcha_init_advanced</title>
 		<hookname>newreply_form_complete</hookname>
 		<phpcode><![CDATA[
-
-echo '
+$target = '</body>';
+$replacement= '
     <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
-<script src="//ox.cs.pdx.edu/services/application/js/metacaptcha_vbb.js"></script>
+<script src="//api.metacaptcha.com/application/js/metacaptcha_vbb.js"></script>
 <script>
-   $(document).ready(function() {initialize_metacaptcha("includes/metacaptcha/metacaptcha.php","comment_form");
-$("#kapow-status").detach().insertAfter($("input[type=\'submit\'][value=\'Preview Post\']"))
+
+   $(document).ready(function() {initialize_metacaptcha("//www.berich.com.vn/includes/metacaptcha/metacaptcha.php","comment_form");
+$("#kapow-status").detach().insertBefore($("input[type=\"submit\"][class=\"button\"]")[0])
 });
-</script>
-<script>
 function Validate(that)
     {
         // if vbulletion validation return true
-        if ( vB_Editor["'.$editorid.'"].prepare_submit(0, '.$vbulletin->options['postminchars'].'))
+         if ( vB_Editor["'.$editorid.'"].prepare_submit(0, '.$vbulletin->options['postminchars'].'))
         {
             //if the submit button is is click
-            if (typeof amf_glb === "undefined"){
-                metaCAPTCHA.execute(vB_Editor["'.$editorid.'"].getRawData());
+            if (typeof amf_glb === "undefined"){   
+              metaCAPTCHA.execute(vB_Editor["'.$editorid.'"].getRawData());
                 return false;
             }
             // if preview button is clicked
@@ -77,14 +77,20 @@ function Validate(that)
 
    }
 </script>
+</body>
     ';
-
+$vbulletin->templatecache['newreply']= str_replace($target, $replacement, $vbulletin->templatecache['newreply']);
 
 $target = 'type="submit" class="button" name="preview"';
 $replacement='type="submit" class="button" name="preview" onclick="amf_glb=true"';
 
 $vbulletin->templatecache['newreply']= str_replace($target, $replacement, $vbulletin->templatecache['newreply']);
+//replace onsubmit handler
+$target = '/(?<=onsubmit=")[^>]*/';
+$replacement= 'return Validate()" id="comment_form" ';
+$vbulletin->templatecache['newreply']= preg_replace($target, $replacement,$vbulletin->templatecache['newreply'] );
 
 ]]></phpcode>
 	</plugin>
 </plugins>
+
